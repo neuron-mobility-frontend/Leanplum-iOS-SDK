@@ -69,16 +69,25 @@
 
     // add gesture recognizer to close message if tap outside to close is set to true.
     BOOL tapOutside = [self.context boolNamed:LPMT_ARG_HTML_TAP_OUTSIDE_TO_CLOSE];
-    if (tapOutside) {
-        UITapGestureRecognizer* gestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didTapOutside)];
-        [self.view addGestureRecognizer:gestureRecognizer];
-    }
+     if (tapOutside || self.isBanner) {
+        if (self.isBanner) {
+            UIPanGestureRecognizer* gestureRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(didTapOutside)];
+            [self.view addGestureRecognizer:gestureRecognizer];
+        } else {
+            UITapGestureRecognizer* gestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didTapOutside)];
+            [self.view addGestureRecognizer:gestureRecognizer];
+        }
+     }
     
     // passthrough view to send touch events to underlaying ViewController
     LPHitView* passthroughView = (LPHitView *) self.view;
-    if (passthroughView) {
-        passthroughView.shouldAllowTapToClose = tapOutside;
-        passthroughView.touchDelegate = self.presentingViewController.view;
+    if (passthroughView || self.isBanner) {
+        if (self.isBanner) {
+            passthroughView.shouldAllowTapToClose = true;
+        } else {
+            passthroughView.shouldAllowTapToClose = tapOutside;
+            passthroughView.touchDelegate = self.presentingViewController.view;
+        }
     }
     
     _orientation = UIDevice.currentDevice.orientation;
@@ -86,6 +95,20 @@
                                              selector:@selector(orientationDidChange:)
                                                  name:UIDeviceOrientationDidChangeNotification
                                                object:nil];
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    if (self.isBanner) {
+        [self dismiss: NO];
+    }
+}
+
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
+    [super touchesBegan:touches withEvent:event];
+    if (self.isBanner) {
+        [self dismiss: NO];
+    }
 }
 
 - (void)dealloc
